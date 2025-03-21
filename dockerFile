@@ -1,35 +1,55 @@
 # Imagen base con CUDA 11.8 y cuDNN 8, basada en Ubuntu 20.04
-FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
+FROM nvidia/cuda:12.1.1-devel-ubuntu22.04
 
 # Evitar interacciones durante la instalación
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Instalar Python y herramientas básicas
 RUN apt-get update && apt-get install -y \
-    python3.10 \
-    python3-pip \
-    python3-dev \
-    libsndfile1 \
+    software-properties-common \
+    curl \
     git \
-    && ln -s /usr/bin/python3.10 /usr/bin/python \
+    libsndfile1 \
+    libffi-dev \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install -y \
+    python3.11 \
+    python3.11-dev \
+    python3.11-distutils \
+    python3.11-venv \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
 # Establecer el directorio de trabajo
 WORKDIR /app
 
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
+    python3.11 get-pip.py && \
+    rm get-pip.py
+
 # Copiar requirements.txt
-COPY requirements.txt .
+COPY requeriment.txt .
 
 # Instalar dependencias de Python
 RUN pip install --no-cache-dir -r requeriment.txt --extra-index-url https://download.pytorch.org/whl/cu118
 
 # Copiar el código fuente
-COPY generate_music.py .
+# COPY generate_music.py .
+COPY . .
 
 # Variables de entorno para CUDA
-ENV CUDA_HOME=/usr/local/cuda
-ENV PATH=/usr/local/cuda/bin:${PATH}
-ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
+#ENV CUDA_HOME=/usr/local/cuda
+#ENV PATH=/usr/local/cuda/bin:${PATH}
+#ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
 
 # Comando por defecto para ejecutar el script
-CMD ["python", "generate_music.py"]
+#CMD ["python", "generate_music.py"]
+
+# Verificar que runpod esté instalado
+RUN python3.11 -c "import runpod; print(runpod.__version__)"
+
+# Definir el comando para ejecutar tu script
+CMD ["python3.11", "handler.py"]
