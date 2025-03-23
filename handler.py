@@ -1,6 +1,7 @@
 ##from transformers import pipeline
 ##import scipy
 import os
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 import runpod
 import torch
 import soundfile as sf
@@ -30,18 +31,24 @@ async def handler(event):
         input_data = event["input"]
         prompt = input_data["prompt"]
         fileName = input_data["fileName"]
+        duration = input_data["duration"]
         music = synthesiser(
             prompt,
-            forward_params={"max_new_tokens": 6000}  # 120 segundos
+            forward_params={"max_new_tokens": duration}  # 120 segundos
         )
         sf.write(fileName, music["audio"][0].T, music["sampling_rate"])
         file_path = os.path.join(os.getcwd(), fileName)
-        audio_url = storage_client.upload_file(file_path, "musicgen_out.wav")
+        audio_url = storage_client.upload_file(file_path, fileName)
         response = {"url": audio_url}
         return response
     except Exception as e:
         return {"error": str(e)}
-    # scipy.io.wavfile.write("musicgen_out.wav", rate=music["sampling_rate"], data=music["audio"])
+
+runpod.serverless.start({"handler": handler})
+
+
+
+   # scipy.io.wavfile.write("musicgen_out.wav", rate=music["sampling_rate"], data=music["audio"])
     # sf.write("musicgen_2min.wav", music["audio"][0].T, music["sampling_rate"])
     ##model_path = os.path.abspath("./InspireMusic-1.5B-Long")
     ## snapshot_download(repo_id="FunAudioLLM/InspireMusic-1.5B-Long", local_dir=model_path)
@@ -55,6 +62,3 @@ async def handler(event):
     #    return response
     # except Exception as e:
     #    return {"error": str(e)}
-
-runpod.serverless.start({"handler": handler})
-
