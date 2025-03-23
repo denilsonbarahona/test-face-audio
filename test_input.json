@@ -1,0 +1,10 @@
+{
+  "input": {
+    "user": "user123",
+    "fileName": "user123/sadxs3ss00101.wav",
+    "prompt": "a sad song with piano",
+    "model_name": "InspireMusic-1.5B-Long",
+    "chorus": "into",
+    "duration": 20
+  }
+}
