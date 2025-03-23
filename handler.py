@@ -1,6 +1,7 @@
 ##from transformers import pipeline
 ##import scipy
 import os
+import torch
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 import runpod
 import torch
@@ -32,16 +33,20 @@ async def handler(event):
         prompt = input_data["prompt"]
         fileName = input_data["fileName"]
         duration = input_data["duration"]
+        print(f"Generando audio de {duration} segundos ({duration} tokens)...")
         music = synthesiser(
             prompt,
             forward_params={"max_new_tokens": duration}  # 120 segundos
         )
+        print("Audio generado, escribiendo archivo...")
         sf.write(fileName, music["audio"][0].T, music["sampling_rate"])
         file_path = os.path.join(os.getcwd(), fileName)
+        torch.cuda.empty_cache()
         audio_url = storage_client.upload_file(file_path, fileName)
         response = {"url": audio_url}
         return response
     except Exception as e:
+        torch.cuda.empty_cache()
         return {"error": str(e)}
 
 runpod.serverless.start({"handler": handler})
